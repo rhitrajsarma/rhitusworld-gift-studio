@@ -1262,7 +1262,7 @@ export default function App() {
             </button>
 
             <button
-              onClick={() => setShowResetModal(true)}
+              onClick={() => setShowResetModal(false)}
               title="Restore Demo Data"
               className="p-2 rounded-xl border border-stone-200 bg-white hover:bg-[#F3F1EC] text-[#52525B] hover:text-[#1C1C1E] transition-colors"
             >

@@ -1,4 +1,4 @@
-# Rhitusworld Photography — Gift Certificate & Lifecycle Studio
+# Rhitusworld Photography — Gift Certificate & Lifecycle Management
 
 A full-stack **Vite + React** and **Node.js + Express + PostgreSQL** application for issuing, customizing, printing, and managing the complete financial lifecycle of gift certificates for **Rhitusworld Photography** (Monroe, CT).
 
