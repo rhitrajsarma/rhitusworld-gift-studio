@@ -127,6 +127,6 @@ VITE_API_URL=http://localhost:4000/api
 
 - **Studio:** Rhitusworld Photography (Authorized Photographer: Rhituraj Sarma)
 - **Website:** `www.rhitusworld.com`
-- **Email:** `rhituraj.sarma@outlook.com`
-- **Phone:** `203-570-6131`
-- **Location:** Monroe, CT
+- **Email:** `***raj***@***.com`
+- **Phone:** `***-***-***`
+- **Location:** ***, CT
