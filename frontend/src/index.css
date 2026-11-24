@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+/* ============================================================================
+GLOBAL EDITORIAL TYPOGRAPHY & BASE TOKENS (frontend/src/index.css)
+============================================================================ */
+@layer base {
+    :root {
+        --color-ivory: #FAF9F6;
+        --color-alabaster: #F3F1EC;
+        --color-charcoal: #1C1C1E;
+        --color-slate: #52525B;
+        --color-champagne: #C5A059;
+        --color-champagne-dark: #A8843E;
+        --color-champagne-light: #F4EDE0;
+        --color-darkroom: #141416;
+    }
+
+    body {
+        background-color: var(--color-ivory);
+        color: var(--color-charcoal);
+        font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+}
+
+.font-serif {
+    font-family: "Cormorant Garamond", Georgia, serif;
+}
+
+.font-script {
+    font-family: "Great Vibes", cursive;
+}
+
+/* Custom Editorial Scrollbars */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--color-alabaster);
+}
+
+::-webkit-scrollbar-thumb {
+    background: #D6D3CB;
+    border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--color-champagne);
+}
