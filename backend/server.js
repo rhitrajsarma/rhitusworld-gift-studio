@@ -13,6 +13,121 @@ const pool = new pg.Pool({
   connectionString: process.env.DATABASE_URL
 });
 
+const bookingFields = {
+  clientName: ['client_name', 160, true],
+  clientEmail: ['client_email', 160],
+  clientPhone: ['client_phone', 80],
+  photographer: ['photographer', 160, true],
+  sessionType: ['session_type', 200, true],
+  location: ['location'],
+  notes: ['notes'],
+  startAt: ['start_at'],
+  endAt: ['end_at'],
+  status: ['status'],
+  certificateId: ['certificate_id']
+};
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function validInstant(value) {
+  if (typeof value !== 'string') return false;
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,3})?(Z|[+-]\d{2}:\d{2})$/i.exec(value);
+  if (!match) return false;
+  const [, year, month, day, hour, minute, second, zone] = match;
+  const days = new Date(Date.UTC(Number(year), Number(month), 0)).getUTCDate();
+  return Number(year) >= 100 && Number(month) >= 1 && Number(month) <= 12 &&
+    Number(day) >= 1 && Number(day) <= days && Number(hour) <= 23 &&
+    Number(minute) <= 59 && Number(second) <= 59 &&
+    (zone.toUpperCase() === 'Z' || (Number(zone.slice(1, 3)) <= 23 && Number(zone.slice(4)) <= 59)) &&
+    Number.isFinite(Date.parse(value));
+}
+
+function validateBooking(body, creating) {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return 'Expected a booking object';
+  if (Object.keys(body).some((key) => !Object.hasOwn(bookingFields, key))) return 'Unknown booking field';
+  if (!creating && !Object.keys(body).length) return 'No booking fields provided';
+  for (const [key, [, max, required]] of Object.entries(bookingFields)) {
+    const value = body[key];
+    if (value === undefined) {
+      if (creating && (required || key === 'startAt' || key === 'endAt')) return `${key} is required`;
+      continue;
+    }
+    if (key === 'startAt' || key === 'endAt') {
+      if (!validInstant(value)) return `${key} must be an ISO timestamp with a timezone`;
+    } else if (key === 'status') {
+      if (!['scheduled', 'cancelled'].includes(value)) return 'Invalid status';
+    } else if (key === 'certificateId') {
+      if (value !== null && (typeof value !== 'string' || !uuidPattern.test(value))) return 'Invalid certificateId';
+    } else if (value === null && !required) {
+      continue;
+    } else if (typeof value !== 'string' || (required && !value.trim()) || (max && value.length > max) || value.includes('\0')) {
+      return `Invalid ${key}`;
+    }
+  }
+  if (body.startAt !== undefined && body.endAt !== undefined && Date.parse(body.endAt) <= Date.parse(body.startAt)) {
+    return 'endAt must be after startAt';
+  }
+  return null;
+}
+
+function bookingResponse(row) {
+  return {
+    id: row.id, clientName: row.client_name, clientEmail: row.client_email,
+    clientPhone: row.client_phone, photographer: row.photographer, sessionType: row.session_type,
+    location: row.location, notes: row.notes, startAt: row.start_at, endAt: row.end_at,
+    status: row.status, certificateId: row.certificate_id, createdAt: row.created_at, updatedAt: row.updated_at
+  };
+}
+
+function bookingError(res, err) {
+  if (err.code === '23P01') return res.status(409).json({ error: 'Photographer already has a booking during this time' });
+  if (err.code === '23503') return res.status(400).json({ error: 'Certificate not found' });
+  if (err.code === '23514' || err.code === '22007' || err.code === '22008') return res.status(400).json({ error: 'Invalid booking values or time range' });
+  console.error(err);
+  return res.status(500).json({ error: 'Unable to process booking' });
+}
+
+app.get('/api/bookings', async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM bookings ORDER BY start_at, id');
+    res.json(rows.map(bookingResponse));
+  } catch (err) {
+    bookingError(res, err);
+  }
+});
+
+app.post('/api/bookings', async (req, res) => {
+  const error = validateBooking(req.body, true);
+  if (error) return res.status(400).json({ error });
+  const keys = Object.keys(req.body);
+  const columns = keys.map((key) => bookingFields[key][0]);
+  try {
+    const { rows } = await pool.query(
+      `INSERT INTO bookings (${columns.join(', ')}) VALUES (${keys.map((_, i) => `$${i + 1}`).join(', ')}) RETURNING *`,
+      keys.map((key) => req.body[key])
+    );
+    res.status(201).json(bookingResponse(rows[0]));
+  } catch (err) {
+    bookingError(res, err);
+  }
+});
+
+app.patch('/api/bookings/:id', async (req, res) => {
+  if (!uuidPattern.test(req.params.id)) return res.status(400).json({ error: 'Invalid booking id' });
+  const error = validateBooking(req.body, false);
+  if (error) return res.status(400).json({ error });
+  const keys = Object.keys(req.body);
+  try {
+    const { rows } = await pool.query(
+      `UPDATE bookings SET ${keys.map((key, i) => `${bookingFields[key][0]} = $${i + 1}`).join(', ')}, updated_at = NOW() WHERE id = $${keys.length + 1} RETURNING *`,
+      [...keys.map((key) => req.body[key]), req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Booking not found' });
+    res.json(bookingResponse(rows[0]));
+  } catch (err) {
+    bookingError(res, err);
+  }
+});
+
 // GET /api/certificates — Retrieve all gift certificates with ordered audit logs
 app.get('/api/certificates', async (req, res) => {
   try {

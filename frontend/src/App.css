@@ -53,3 +53,37 @@ box-shadow: none !important;
 print-color-adjust: exact !important;
 }
 }
+
+.booking-field-label {
+  display: block;
+  margin-bottom: 0.375rem;
+  color: #52525B;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.booking-field-input {
+  display: block;
+  width: 100%;
+  min-height: 2.5rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid #D6D3D1;
+  border-radius: 0.75rem;
+  background: #FFFFFF;
+  color: #1C1C1E;
+  font: inherit;
+  font-size: 0.8125rem;
+}
+
+.booking-field-input:focus {
+  border-color: #C5A059;
+  outline: 2px solid rgb(197 160 89 / 18%);
+  outline-offset: 1px;
+}
+
+.booking-field-input:disabled {
+  background: #F3F1EC;
+  cursor: not-allowed;
+}
